@@ -1,0 +1,45 @@
+name: Trigger auto deployment for truly-last-testing-app
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - 'result/**'
+    - '.github/workflows/truly-last-testing-app-AutoDeployTrigger-99d36e42-1533-4574-8932-71fd4ec537d4.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.TRULYLASTTESTINGAPP_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.TRULYLASTTESTINGAPP_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.TRULYLASTTESTINGAPP_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          appSourcePath: ${{ github.workspace }}/result 
+          registryUrl: docker.io
+          registryUsername: ${{ secrets.TRULYLASTTESTINGAPP_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.TRULYLASTTESTINGAPP_REGISTRY_PASSWORD }}
+          containerAppName: truly-last-testing-app
+          resourceGroup: Testing
+          imageToBuild: mon0462/truly-last-testing-app:${{ github.sha }}
+          dockerfilePath: Dockerfile
+
+
