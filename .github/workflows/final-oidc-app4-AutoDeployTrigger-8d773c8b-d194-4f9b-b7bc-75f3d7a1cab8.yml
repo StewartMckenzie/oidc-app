@@ -1,0 +1,45 @@
+name: Trigger auto deployment for final-oidc-app4
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - 'result/**'
+    - '.github/workflows/final-oidc-app4-AutoDeployTrigger-8d773c8b-d194-4f9b-b7bc-75f3d7a1cab8.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.FINALOIDCAPP4_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.FINALOIDCAPP4_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.FINALOIDCAPP4_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          appSourcePath: ${{ github.workspace }}/result 
+          registryUrl: docker.io
+          registryUsername: ${{ secrets.FINALOIDCAPP4_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.FINALOIDCAPP4_REGISTRY_PASSWORD }}
+          containerAppName: final-oidc-app4
+          resourceGroup: final-oidc-rg
+          imageToBuild: mon0462/final-oidc-app4:${{ github.sha }}
+          dockerfilePath: Dockerfile
+
+
