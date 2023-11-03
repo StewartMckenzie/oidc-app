@@ -1,0 +1,45 @@
+name: Trigger auto deployment for hkjllkhj
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - 'result/**'
+    - '.github/workflows/hkjllkhj-AutoDeployTrigger-1f153fed-7db0-47e3-90fb-b213693f75e8.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.HKJLLKHJ_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.HKJLLKHJ_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.HKJLLKHJ_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          appSourcePath: ${{ github.workspace }}/result 
+          registryUrl: asdeereg.azurecr.io
+          registryUsername: ${{ secrets.HKJLLKHJ_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.HKJLLKHJ_REGISTRY_PASSWORD }}
+          containerAppName: hkjllkhj
+          resourceGroup: Testing
+          imageToBuild: asdeereg.azurecr.io/hkjllkhj:${{ github.sha }}
+          dockerfilePath: Dockerfile
+
+
